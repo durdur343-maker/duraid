@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شعبة المالية - نظام إدارة الموظفين</title>
+    <meta name="description" content="نظام إدارة وبحث موظفي شعبة المالية">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        :root {
+            --primary-color: #1e3a5f;
+            --secondary-color: #4c9aff;
+            --accent-color: #ffc107;
+            --light-color: #f0f4f8;
+            --dark-color: #0d2b42;
+            --text-color: #333;
+            --border-color: #ddd;
+        }
+        body {
+            background-color: #f9f9f9;
+            color: var(--text-color);
+            line-height: 1.6;
+            padding-bottom: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        header {
+            background: linear-gradient(to right, var(--dark-color), var(--primary-color));
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #fff, #e0e7ff);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-color);
+            font-size: 40px;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+        }
+        .department-info h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+            color: white;
+        }
+        .department-info p {
+            font-size: 16px;
+            opacity: 0.9;
+            color: var(--light-color);
+        }
+        .header-stats {
+            text-align: right;
+        }
+        .stat-item {
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        .stat-value {
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+        .search-section {
+            background-color: white;
+            padding: 30px;
+            margin: 20px auto;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            max-width: 1000px;
+        }
+        .search-title {
+            text-align: center;
+            margin-bottom: 25px;
+            color: var(--dark-color);
+            font-size: 24px;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px;
+            display: inline-block;
+            width: 100%;
+        }
+        .search-box {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .search-input-container {
+            position: relative;
+        }
+        .search-input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 50px;
+            font-size: 16px;
+            transition: all 0.3s;
+            background-color: #f9f9f9;
+            text-align: right;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(76, 154, 255, 0.2);
+        }
+        .search-button {
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 14px 40px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            align-self: center;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .search-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(30, 58, 95, 0.3);
+        }
+        .search-hint {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .results-section {
+            margin: 30px 0;
+            display: none;
+        }
+        .results-title {
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--dark-color);
+            font-size: 26px;
+            position: relative;
+        }
+        .results-title:after {
+            content: '';
+            position: absolute;
+            width: 100px;
+            height: 3px;
+            background-color: var(--secondary-color);
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .results-info {
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .employee-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            border-right: 5px solid var(--secondary-color);
+            transition: transform 0.3s;
+        }
+        .employee-card:hover {
+            transform: translateY(-5px);
+        }
+        .employee-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .employee-avatar {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 28px;
+            margin-left: 20px;
+        }
+        .employee-name {
+            font-size: 22px;
+            color: var(--dark-color);
+            margin-bottom: 5px;
+        }
+        .employee-id {
+            color: #666;
+            font-size: 15px;
+        }
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 15px;
+        }
+        .detail-item {
+            display: flex;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #eee;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: var(--primary-color);
+            min-width: 140px;
+        }
+        .detail-value {
+            color: #555;
+            flex: 1;
+        }
+        .no-results {
+            text-align: center;
+            padding: 50px 20px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            display: none;
+        }
+        .no-results i {
+            font-size: 60px;
+            color: #ccc;
+            margin-bottom: 20px;
+        }
+        .no-results h3 {
+            color: #777;
+            font-size: 22px;
+            margin-bottom: 10px;
+        }
+        .financial-icons {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 25px;
+            margin: 30px 0;
+        }
+        .financial-icon {
+            width: 70px;
+            height: 70px;
+            background-color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-color);
+            font-size: 32px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s;
+        }
+        .financial-icon:hover {
+            transform: scale(1.1);
+        }
+        .all-employees {
+            margin-top: 40px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        .all-employees-title {
+            text-align: center;
+            margin-bottom: 25px;
+            color: var(--dark-color);
+            font-size: 24px;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px;
+        }
+        .employee-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        .employee-mini-card {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 15px;
+            border-right: 3px solid var(--secondary-color);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .employee-mini-card:hover {
+            background-color: #e8f0fe;
+            transform: translateX(-5px);
+        }
+        .employee-mini-name {
+            font-weight: bold;
+            color: var(--dark-color);
+            margin-bottom: 5px;
+        }
+        .employee-mini-position {
+            color: #666;
+            font-size: 14px;
+        }
+        footer {
+            background-color: var(--dark-color);
+            color: white;
+            padding: 25px 0;
+            text-align: center;
+            margin-top: 50px;
+        }
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        .footer-logo {
+            font-size: 24px;
+            color: var(--accent-color);
+        }
+        .loader {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .loader i {
+            font-size: 30px;
+            color: var(--primary-color);
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        .action-btn {
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .action-btn.excel {
+            background: linear-gradient(to right, #1e7240, #2e8b57);
+        }
+        .action-btn.pdf {
+            background: linear-gradient(to right, #dc3545, #e55353);
+        }
+        .action-btn.jpg {
+            background: linear-gradient(to right, #ff9800, #ffb74d);
+        }
+        .action-btn.print {
+            background: linear-gradient(to right, #2196F3, #21CBF3);
+        }
+        @media print {
+            .no-print, .action-buttons, .search-section, header, footer, .financial-icons, .action-btn, .search-button, .search-box, .all-employees {
+                display: none !important;
+            }
+            body { background: white; padding: 0; margin: 0; }
+            .results-section { display: block !important; margin: 0; padding: 0; }
+            .employee-card { page-break-inside: avoid; break-inside: avoid; box-shadow: none; border: 1px solid #ccc; margin-bottom: 20px; }
+        }
+        .data-loading {
+            text-align: center;
+            padding: 30px;
+            background-color: white;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            z-index: 1000;
+            display: none;
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @media (max-width: 768px) {
+            .header-content { flex-direction: column; text-align: center; gap: 20px; }
+            .details-grid { grid-template-columns: 1fr; }
+            .employee-header { flex-direction: column; text-align: center; }
+            .employee-avatar { margin-left: 0; margin-bottom: 15px; }
+            .action-btn { padding: 8px 12px; font-size: 12px; }
+        }
+        /* منطقة الطباعة */
+        #print-results-container {
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header class="no-print">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <div class="department-info">
+                        <h1>شعبة المالية</h1>
+                        <p>نظام إدارة الموظفين والرواتب</p>
+                    </div>
+                </div>
+                <div class="header-stats">
+                    <div class="stat-item">إجمالي الموظفين: <span id="total-employees" class="stat-value">0</span></div>
+                    <div class="stat-item">آخر تحديث: <span id="last-update" class="stat-value">الآن</span></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div id="notification" class="notification no-print">
+        <i class="fas fa-check-circle"></i> <span id="notification-text"></span>
+    </div>
+
+    <div class="container">
+        <section class="search-section no-print">
+            <h2 class="search-title">نظام البحث عن موظفي الشعبة</h2>
+            <div class="search-box">
+                <div class="search-input-container">
+                    <input type="text" id="search-input" class="search-input" placeholder="اكتب اسم الموظف للبحث...">
+                </div>
+                <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                    <button id="search-button" class="search-button">
+                        <i class="fas fa-search"></i> بحث
+                    </button>
+                    <button id="show-all-button" class="search-button" style="background: linear-gradient(to right, #4a6fa5, #6b93d6);">
+                        <i class="fas fa-list"></i> عرض الجميع
+                    </button>
+                </div>
+            </div>
+            <div class="search-hint">
+                <p>🔍 البحث يتم حسب <strong>الاسم</strong></p>
+                <p style="font-size:12px; color:#888;">ترتيب الأعمدة: A=(تسلسل), B=الهيكل التنظيمي, C=المنصب, D=الرقم, E=الاسم, F=الدرجة الوظيفية, G=الشهادة, H=الاختصاص العام, I=الاختصاص الدقيق</p>
+            </div>
+            <div class="action-buttons">
+                <button class="action-btn excel" onclick="exportToExcel()">
+                    <i class="fas fa-file-excel"></i> Excel
+                </button>
+                <button class="action-btn pdf" onclick="exportToPDF()">
+                    <i class="fas fa-file-pdf"></i> PDF
+                </button>
+                <button class="action-btn jpg" onclick="exportToJPG()">
+                    <i class="fas fa-camera"></i> صورة JPEG
+                </button>
+                <button class="action-btn print" onclick="printResultsFix()">
+                    <i class="fas fa-print"></i> طباعة
+                </button>
+            </div>
+            <div id="loader" class="loader">
+                <i class="fas fa-spinner"></i>
+                <p>جاري البحث...</p>
+            </div>
+            <div id="data-loading" class="data-loading">
+                <p><i class="fas fa-database"></i> جاري تحميل بيانات الموظفين...</p>
+            </div>
+        </section>
+
+        <div class="financial-icons no-print">
+            <div class="financial-icon" title="الرواتب"><i class="fas fa-money-bill-wave"></i></div>
+            <div class="financial-icon" title="الميزانية"><i class="fas fa-chart-line"></i></div>
+            <div class="financial-icon" title="المحاسبة"><i class="fas fa-calculator"></i></div>
+            <div class="financial-icon" title="الصرف"><i class="fas fa-hand-holding-usd"></i></div>
+            <div class="financial-icon" title="التقارير"><i class="fas fa-file-invoice-dollar"></i></div>
+        </div>
+
+        <section id="results-section" class="results-section">
+            <h2 class="results-title" id="print-title">نتائج البحث</h2>
+            <div class="results-info">تم العثور على <span id="results-count">0</span> نتيجة</div>
+            <div id="results-container"></div>
+        </section>
+
+        <section id="all-employees-section" class="all-employees no-print" style="display: none;">
+            <h2 class="all-employees-title">جميع موظفي الشعبة</h2>
+            <div id="all-employees-container" class="employee-list"></div>
+        </section>
+
+        <div id="no-results" class="no-results no-print">
+            <i class="fas fa-search-minus"></i>
+            <h3>لم يتم العثور على نتائج</h3>
+            <div class="try-again" onclick="showAllEmployees()">عرض جميع الموظفين</div>
+        </div>
+    </div>
+
+    <footer class="no-print">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo"><i class="fas fa-coins"></i></div>
+                <p>شعبة المالية</p>
+                <p>نظام إدارة الموظفين © <span id="current-year"></span></p>
+            </div>
+        </div>
+    </footer>
+
+    <div id="print-section" style="display: none;">
+        <div id="print-results-container"></div>
+    </div>
+
+    <script>
+        let employees = [];
+        let realEmployeeCount = 0;
+        let currentResults = [];
+
+        const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQj1o0BLRVs119hZU-VApMhvP1_V0Xc6uqJTdx2uzr9ewF5V9otB6eDMQLbkeR9WlL0uKctlCaXWt5d/pub?gid=0&single=true&output=csv';
+
+        const elements = {
+            searchInput: document.getElementById('search-input'),
+            searchButton: document.getElementById('search-button'),
+            showAllButton: document.getElementById('show-all-button'),
+            resultsSection: document.getElementById('results-section'),
+            resultsContainer: document.getElementById('results-container'),
+            allEmployeesSection: document.getElementById('all-employees-section'),
+            allEmployeesContainer: document.getElementById('all-employees-container'),
+            noResults: document.getElementById('no-results'),
+            loader: document.getElementById('loader'),
+            dataLoading: document.getElementById('data-loading'),
+            resultsCount: document.getElementById('results-count'),
+            totalEmployees: document.getElementById('total-employees'),
+            lastUpdate: document.getElementById('last-update'),
+            notification: document.getElementById('notification'),
+            notificationText: document.getElementById('notification-text'),
+            currentYearElement: document.getElementById('current-year')
+        };
+
+        function updateDate() {
+            const now = new Date();
+            elements.currentYearElement.textContent = now.getFullYear();
+            const timeString = now.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+            elements.lastUpdate.textContent = timeString;
+        }
+
+        function showNotification(message, type = 'info') {
+            elements.notificationText.textContent = message;
+            elements.notification.style.display = 'block';
+            if (type === 'success') elements.notification.style.backgroundColor = '#1e3a5f';
+            else if (type === 'warning') elements.notification.style.backgroundColor = '#ff9800';
+            else if (type === 'error') elements.notification.style.backgroundColor = '#f44336';
+            setTimeout(() => { elements.notification.style.display = 'none'; }, 3000);
+        }
+
+        async function fetchEmployeeData() {
+            try {
+                elements.dataLoading.style.display = 'block';
+                const response = await fetch(GOOGLE_SHEET_CSV_URL + '&t=' + new Date().getTime());
+                if (!response.ok) throw new Error('خطأ');
+                const csvData = await response.text();
+                employees = parseCSV(csvData);
+                if (employees.length === 0) throw new Error('لا توجد بيانات');
+                realEmployeeCount = employees.length;
+                elements.dataLoading.style.display = 'none';
+                updateEmployeeCount();
+                showNotification(`✅ تم تحميل ${realEmployeeCount} موظف`, 'success');
+            } catch (error) {
+                employees = getDemoData();
+                realEmployeeCount = employees.length;
+                updateEmployeeCount();
+                elements.dataLoading.style.display = 'none';
+                showNotification(`⚠️ بيانات تجريبية (${realEmployeeCount} موظف)`, 'warning');
+            }
+        }
+
+        function getDemoData() {
+            return [
+                { "التسلسل": "1", "الهيكل التنظيمي": "المالية", "المنصب": "مدير القسم", "الرقم": "5657", "الاسم": "د.علي جبار عبد الساده", "الدرجة الوظيفية": "الثانية", "الشهادة": "دكتوراه", "الاختصاص العام": "زراعة", "الاختصاص الدقيق": "تغذية وفسلجة نبات" },
+                { "التسلسل": "2", "الهيكل التنظيمي": "المالية", "المنصب": "محاسب", "الرقم": "5556", "الاسم": "زينب كاطع مارد", "الدرجة الوظيفية": "الخامسة", "الشهادة": "متوسطة", "الاختصاص العام": "*", "الاختصاص الدقيق": "*" },
+                { "التسلسل": "3", "الهيكل التنظيمي": "المالية", "المنصب": "فني", "الرقم": "1881", "الاسم": "عقيل مجيد سعيد", "الدرجة الوظيفية": "الخامسة", "الشهادة": "دبلوم", "الاختصاص العام": "مكان", "الاختصاص الدقيق": "مكان ومعدات" },
+                { "التسلسل": "4", "الهيكل التنظيمي": "المالية", "المنصب": "باحث", "الرقم": "2488", "الاسم": "د. خلود عبد الله محمد", "الدرجة الوظيفية": "الأولى", "الشهادة": "دكتوراه", "الاختصاص العام": "علوم", "الاختصاص الدقيق": "علوم حياة" },
+                { "التسلسل": "5", "الهيكل التنظيمي": "المالية", "المنصب": "باحث", "الرقم": "1601", "الاسم": "د. وفاء هادي حسون", "الدرجة الوظيفية": "الأولى", "الشهادة": "دكتوراه", "الاختصاص العام": "زراعة", "الاختصاص الدقيق": "هندسة حدائق" },
+                { "التسلسل": "6", "الهيكل التنظيمي": "المالية", "المنصب": "موظف", "الرقم": "001", "الاسم": "دريد حامد محمود", "الدرجة الوظيفية": "الثالثة", "الشهادة": "بكالوريوس", "الاختصاص العام": "محاسبة", "الاختصاص الدقيق": "مالية" }
+            ];
+        }
+
+        function parseCSV(csvText) {
+            const lines = csvText.split('\n').filter(line => line.trim() !== '');
+            if (lines.length < 2) return [];
+            const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+                const employee = {};
+                for (let j = 0; j < headers.length; j++) {
+                    employee[headers[j]] = values[j] || '';
+                }
+                if (employee["الاسم"] && employee["الاسم"].trim() !== '') {
+                    data.push(employee);
+                }
+            }
+            return data;
+        }
+
+        function updateEmployeeCount() {
+            elements.totalEmployees.textContent = realEmployeeCount;
+            updateDate();
+        }
+
+        function searchEmployees() {
+            const query = elements.searchInput.value.trim().toLowerCase();
+            if (!query) {
+                showNotification('⚠️ الرجاء إدخال اسم للبحث', 'warning');
+                return;
+            }
+            elements.loader.style.display = 'block';
+            elements.resultsSection.style.display = 'none';
+            elements.noResults.style.display = 'none';
+            elements.allEmployeesSection.style.display = 'none';
+            
+            setTimeout(() => {
+                const results = employees.filter(employee => {
+                    const nameValue = employee["الاسم"] || '';
+                    if (nameValue.toLowerCase().includes(query)) return true;
+                    for (const key in employee) {
+                        const value = employee[key] || '';
+                        if (value.toLowerCase().includes(query)) return true;
+                    }
+                    return false;
+                });
+                currentResults = results;
+                displayResults(results);
+                elements.loader.style.display = 'none';
+                if (results.length > 0) showNotification(`🔍 تم العثور على ${results.length} نتيجة`, 'success');
+                else showNotification('❌ لم يتم العثور على نتائج', 'error');
+            }, 300);
+        }
+
+        function displayResults(results) {
+            elements.resultsContainer.innerHTML = '';
+            if (results.length === 0) {
+                elements.noResults.style.display = 'block';
+                elements.resultsCount.textContent = '0';
+                return;
+            }
+            elements.resultsSection.style.display = 'block';
+            elements.noResults.style.display = 'none';
+            elements.resultsCount.textContent = results.length;
+            results.forEach(employee => {
+                elements.resultsContainer.appendChild(createEmployeeCard(employee));
+            });
+        }
+
+        function createEmployeeCard(employee) {
+            const card = document.createElement('div');
+            card.className = 'employee-card';
+            const fullName = employee["الاسم"] || 'غير محدد';
+            const firstLetter = fullName.charAt(0) || 'م';
+            
+            const orderedFields = ["الرقم", "الهيكل التنظيمي", "المنصب", "الدرجة الوظيفية", "الشهادة", "الاختصاص العام", "الاختصاص الدقيق"];
+            
+            let detailsHTML = '';
+            for (const field of orderedFields) {
+                if (employee[field] && employee[field].trim() !== '' && employee[field] !== '*') {
+                    detailsHTML += `
+                        <div class="detail-item">
+                            <span class="detail-label">${field}:</span>
+                            <span class="detail-value">${employee[field]}</span>
+                        </div>
+                    `;
+                }
+            }
+            
+            card.innerHTML = `
+                <div class="employee-header">
+                    <div class="employee-avatar">${firstLetter}</div>
+                    <div>
+                        <h3 class="employee-name">${fullName}</h3>
+                        <p class="employee-id">الرقم: ${employee["الرقم"] || ''}</p>
+                    </div>
+                </div>
+                <div class="details-grid">${detailsHTML}</div>
+            `;
+            return card;
+        }
+
+        // ============== حفظ Excel ==============
+        function exportToExcel() {
+            if (currentResults.length === 0) {
+                showNotification('⚠️ لا توجد نتائج للتصدير', 'warning');
+                return;
+            }
+            
+            // تحويل البيانات إلى جدول
+            const excelData = [];
+            // رؤوس الأعمدة
+            const headers = ["الرقم", "الهيكل التنظيمي", "المنصب", "الاسم", "الدرجة الوظيفية", "الشهادة", "الاختصاص العام", "الاختصاص الدقيق"];
+            excelData.push(headers);
+            
+            // بيانات الموظفين
+            for (const emp of currentResults) {
+                excelData.push([
+                    emp["الرقم"] || '',
+                    emp["الهيكل التنظيمي"] || '',
+                    emp["المنصب"] || '',
+                    emp["الاسم"] || '',
+                    emp["الدرجة الوظيفية"] || '',
+                    emp["الشهادة"] || '',
+                    emp["الاختصاص العام"] || '',
+                    emp["الاختصاص الدقيق"] || ''
+                ]);
+            }
+            
+            // إنشاء ورقة عمل
+            const ws = XLSX.utils.aoa_to_sheet(excelData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "الموظفين");
+            
+            // حفظ الملف
+            const searchTerm = elements.searchInput.value || 'الكل';
+            XLSX.writeFile(wb, `موظفين_${searchTerm}_${Date.now()}.xlsx`);
+            showNotification('✅ تم حفظ ملف Excel بنجاح', 'success');
+        }
+
+        // ============== حفظ PDF بشكل صحيح بالعربية ==============
+        async function exportToPDF() {
+            if (currentResults.length === 0) {
+                showNotification('⚠️ لا توجد نتائج للتصدير', 'warning');
+                return;
+            }
+            
+            showNotification('📄 جاري إنشاء ملف PDF...', 'info');
+            
+            // إنشاء نافذة مؤقتة للطباعة بصيغة PDF
+            const searchTerm = elements.searchInput.value || 'جميع الموظفين';
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' });
+            const timeStr = now.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+            
+            // إنشاء HTML للطباعة
+            let employeesHTML = '';
+            for (const emp of currentResults) {
+                const fullName = emp["الاسم"] || 'غير محدد';
+                employeesHTML += `
+                    <div style="border: 1px solid #ddd; border-right: 5px solid #1e3a5f; padding: 15px; margin-bottom: 20px; border-radius: 8px; page-break-inside: avoid;">
+                        <div style="display: flex; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #1e3a5f;">
+                            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #1e3a5f, #4c9aff); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; margin-left: 15px;">${fullName.charAt(0) || 'م'}</div>
+                            <div>
+                                <h3 style="font-size: 18px; color: #1e3a5f; margin: 0;">${fullName}</h3>
+                                <p style="color: #666; margin: 5px 0 0 0;">الرقم: ${emp["الرقم"] || ''}</p>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            ${emp["الهيكل التنظيمي"] && emp["الهيكل التنظيمי"] !== '*' ? `<div><strong>الهيكل التنظيمي:</strong> ${emp["الهيكل التنظيمي"]}</div>` : ''}
+                            ${emp["المنصب"] && emp["المنصب"] !== '*' ? `<div><strong>المنصب:</strong> ${emp["المنصب"]}</div>` : ''}
+                            ${emp["الدرجة الوظيفية"] && emp["الدرجة الوظيفية"] !== '*' ? `<div><strong>الدرجة الوظيفية:</strong> ${emp["الدرجة الوظيفية"]}</div>` : ''}
+                            ${emp["الشهادة"] && emp["الشهادة"] !== '*' ? `<div><strong>الشهادة:</strong> ${emp["الشهادة"]}</div>` : ''}
+                            ${emp["الاختصاص العام"] && emp["الاختصاص العام"] !== '*' ? `<div><strong>الاختصاص العام:</strong> ${emp["الاختصاص العام"]}</div>` : ''}
+                            ${emp["الاختصاص الدقيق"] && emp["الاختصاص الدقيق"] !== '*' ? `<div><strong>الاختصاص الدقيق:</strong> ${emp["الاختصاص الدقيق"]}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            const printHTML = `
+                <!DOCTYPE html>
+                <html dir="rtl">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>تقرير الموظفين</title>
+                    <style>
+                        @media print {
+                            @page { size: A4; margin: 15mm; }
+                            body { margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
+                        }
+                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: white; }
+                        .header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px solid #1e3a5f; }
+                        .logo { width: 60px; height: 60px; background: #1e3a5f; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 28px; margin: 0 auto 15px; }
+                        .title { font-size: 24px; color: #1e3a5f; margin-bottom: 5px; }
+                        .subtitle { color: #666; font-size: 14px; margin-bottom: 5px; }
+                        .date { color: #888; font-size: 12px; margin-top: 10px; }
+                        .count { background: #1e3a5f; color: white; padding: 5px 15px; border-radius: 20px; display: inline-block; margin: 15px 0; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="logo">💰</div>
+                        <h1 class="title">شعبة المالية</h1>
+                        <p class="subtitle">نتائج البحث عن الموظفين</p>
+                        <p class="subtitle">مصطلح البحث: ${searchTerm}</p>
+                        <p class="date">تاريخ التقرير: ${dateStr} - ${timeStr}</p>
+                        <div class="count">عدد النتائج: ${currentResults.length} موظف</div>
+                    </div>
+                    ${employeesHTML}
+                </body>
+                </html>
+            `;
+            
+            // فتح نافذة جديدة وطباعتها كـ PDF
+            const pdfWindow = window.open('', '_blank');
+            pdfWindow.document.write(printHTML);
+            pdfWindow.document.close();
+            
+            setTimeout(() => {
+                pdfWindow.print();
+                showNotification('✅ تم فتح PDF للطباعة - اختر "حفظ كـ PDF"', 'success');
+            }, 500);
+        }
+
+        // ============== حفظ كصورة JPEG ==============
+        async function exportToJPG() {
+            if (currentResults.length === 0) {
+                showNotification('⚠️ لا توجد نتائج للتصدير', 'warning');
+                return;
+            }
+            
+            showNotification('📸 جاري تحضير الصورة...', 'info');
+            
+            // إنشاء عنصر مؤقت لالتقاط الصورة
+            const captureDiv = document.createElement('div');
+            captureDiv.style.backgroundColor = 'white';
+            captureDiv.style.padding = '20px';
+            captureDiv.style.direction = 'rtl';
+            captureDiv.style.fontFamily = 'Segoe UI, Tahoma, sans-serif';
+            captureDiv.style.width = '800px';
+            
+            // إضافة الهيدر
+            captureDiv.innerHTML = `
+                <div style="text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 3px solid #1e3a5f;">
+                    <div style="width: 60px; height: 60px; background: #1e3a5f; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 28px; margin: 0 auto 10px;">💰</div>
+                    <h2 style="color: #1e3a5f; margin: 0;">شعبة المالية</h2>
+                    <p style="color: #666; margin: 5px 0;">نتائج البحث: ${elements.searchInput.value || 'الكل'}</p>
+                    <p style="color: #888; font-size: 12px;">${new Date().toLocaleDateString('ar-SA')}</p>
+                </div>
+            `;
+            
+            // إضافة بطاقات الموظفين
+            for (const emp of currentResults) {
+                const empDiv = document.createElement('div');
+                empDiv.style.border = '1px solid #ddd';
+                empDiv.style.borderRight = '5px solid #1e3a5f';
+                empDiv.style.padding = '15px';
+                empDiv.style.marginBottom = '15px';
+                empDiv.style.borderRadius = '8px';
+                
+                let detailsHTML = '';
+                const fields = ["الرقم", "الهيكل التنظيمي", "المنصب", "الدرجة الوظيفية", "الشهادة", "الاختصاص العام", "الاختصاص الدقيق"];
+                for (const f of fields) {
+                    if (emp[f] && emp[f] !== '*' && emp[f].trim() !== '') {
+                        detailsHTML += `<div style="margin: 5px 0;"><strong>${f}:</strong> ${emp[f]}</div>`;
+                    }
+                }
+                
+                empDiv.innerHTML = `
+                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                        <div style="width: 45px; height: 45px; background: linear-gradient(135deg, #1e3a5f, #4c9aff); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; margin-left: 10px;">${(emp["الاسم"] || 'م').charAt(0)}</div>
+                        <div>
+                            <h3 style="margin: 0; color: #1e3a5f;">${emp["الاسم"] || 'غير محدد'}</h3>
+                        </div>
+                    </div>
+                    ${detailsHTML}
+                `;
+                captureDiv.appendChild(empDiv);
+            }
+            
+            document.body.appendChild(captureDiv);
+            
+            try {
+                const canvas = await html2canvas(captureDiv, {
+                    scale: 2,
+                    backgroundColor: '#ffffff',
+                    logging: false
+                });
+                const link = document.createElement('a');
+                link.download = `موظفين_${Date.now()}.jpeg`;
+                link.href = canvas.toDataURL('image/jpeg', 0.9);
+                link.click();
+                showNotification('✅ تم حفظ الصورة بنجاح', 'success');
+            } catch (err) {
+                showNotification('❌ حدث خطأ في حفظ الصورة', 'error');
+            }
+            
+            document.body.removeChild(captureDiv);
+        }
+
+        // ============== طباعة ==============
+        function printResultsFix() {
+            if (currentResults.length === 0) {
+                showNotification('⚠️ لا توجد نتائج للطباعة', 'warning');
+                return;
+            }
+            
+            const searchTerm = elements.searchInput.value || 'جميع الموظفين';
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' });
+            const timeStr = now.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+            
+            let employeesHTML = '';
+            for (const emp of currentResults) {
+                const fullName = emp["الاسم"] || 'غير محدد';
+                employeesHTML += `
+                    <div style="border: 1px solid #ddd; border-right: 5px solid #1e3a5f; padding: 15px; margin-bottom: 20px; border-radius: 8px; page-break-inside: avoid;">
+                        <div style="display: flex; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #1e3a5f;">
+                            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #1e3a5f, #4c9aff); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; margin-left: 15px;">${fullName.charAt(0) || 'م'}</div>
+                            <div>
+                                <h3 style="font-size: 18px; color: #1e3a5f; margin: 0;">${fullName}</h3>
+                                <p style="color: #666; margin: 5px 0 0 0;">الرقم: ${emp["الرقم"] || ''}</p>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            ${emp["الهيكل التنظيمي"] && emp["الهيكل التنظيمي"] !== '*' ? `<div><strong>الهيكل التنظيمي:</strong> ${emp["الهيكل التنظيمي"]}</div>` : ''}
+                            ${emp["المنصب"] && emp["المنصب"] !== '*' ? `<div><strong>المنصب:</strong> ${emp["المنصب"]}</div>` : ''}
+                            ${emp["الدرجة الوظيفية"] && emp["الدرجة الوظيفية"] !== '*' ? `<div><strong>الدرجة الوظيفية:</strong> ${emp["الدرجة الوظيفية"]}</div>` : ''}
+                            ${emp["الشهادة"] && emp["الشهادة"] !== '*' ? `<div><strong>الشهادة:</strong> ${emp["الشهادة"]}</div>` : ''}
+                            ${emp["الاختصاص العام"] && emp["الاختصاص العام"] !== '*' ? `<div><strong>الاختصاص العام:</strong> ${emp["الاختصاص العام"]}</div>` : ''}
+                            ${emp["الاختصاص الدقيق"] && emp["الاختصاص الدقيق"] !== '*' ? `<div><strong>الاختصاص الدقيق:</strong> ${emp["الاختصاص الدقيق"]}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            const printWindow = window.open('', '_blank', 'width=900,height=700,scrollbars=yes');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html dir="rtl">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>طباعة - شعبة المالية</title>
+                    <style>
+                        @media print { @page { size: A4; margin: 15mm; } body { margin: 0; padding: 0; } }
+                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: white; }
+                        .header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px solid #1e3a5f; }
+                        .logo { width: 60px; height: 60px; background: #1e3a5f; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 28px; margin: 0 auto 15px; }
+                        .title { font-size: 24px; color: #1e3a5f; margin-bottom: 5px; }
+                        .subtitle { color: #666; font-size: 14px; margin-bottom: 5px; }
+                        .date { color: #888; font-size: 12px; margin-top: 10px; }
+                        .count { background: #1e3a5f; color: white; padding: 5px 15px; border-radius: 20px; display: inline-block; margin: 15px 0; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="logo">💰</div>
+                        <h1 class="title">شعبة المالية</h1>
+                        <p class="subtitle">نتائج البحث عن الموظفين</p>
+                        <p class="subtitle">مصطلح البحث: ${searchTerm}</p>
+                        <p class="date">تاريخ الطباعة: ${dateStr} - ${timeStr}</p>
+                        <div class="count">عدد النتائج: ${currentResults.length} موظف</div>
+                    </div>
+                    ${employeesHTML}
+                    <script>window.onload = function() { window.print(); };<\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            showNotification('✅ تم فتح نافذة الطباعة', 'success');
+        }
+
+        function showAllEmployees() {
+            elements.allEmployeesContainer.innerHTML = '';
+            elements.resultsSection.style.display = 'none';
+            elements.noResults.style.display = 'none';
+            elements.allEmployeesSection.style.display = 'block';
+            currentResults = employees;
+            employees.forEach(emp => {
+                const fullName = emp["الاسم"] || 'غير محدد';
+                const position = emp["المنصب"] || '';
+                const card = document.createElement('div');
+                card.className = 'employee-mini-card';
+                card.onclick = () => {
+                    elements.searchInput.value = fullName;
+                    searchEmployees();
+                };
+                card.innerHTML = `<div class="employee-mini-name">${fullName}</div><div class="employee-mini-position">${position}</div>`;
+                elements.allEmployeesContainer.appendChild(card);
+            });
+        }
+
+        function initializeEvents() {
+            elements.searchButton.addEventListener('click', searchEmployees);
+            elements.showAllButton.addEventListener('click', showAllEmployees);
+            elements.searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchEmployees(); });
+            window.exportToExcel = exportToExcel;
+            window.exportToPDF = exportToPDF;
+            window.exportToJPG = exportToJPG;
+            window.printResultsFix = printResultsFix;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateDate();
+            fetchEmployeeData();
+            initializeEvents();
+        });
+    </script>
+</body>
+</html>
