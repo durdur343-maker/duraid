@@ -195,36 +195,27 @@
             transform: translateY(-5px);
         }
         .employee-header {
-            display: flex;
-            align-items: center;
             margin-bottom: 20px;
             padding-bottom: 15px;
-            border-bottom: 1px solid #eee;
-        }
-        .employee-avatar {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 28px;
-            margin-left: 20px;
+            border-bottom: 2px solid var(--secondary-color);
         }
         .employee-name {
-            font-size: 22px;
+            font-size: 24px;
             color: var(--dark-color);
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            font-weight: bold;
+            padding-right: 5px;
         }
-        .employee-id {
-            color: #666;
-            font-size: 15px;
+        .employee-job-title {
+            font-size: 18px;
+            color: var(--primary-color);
+            font-weight: bold;
+            margin-bottom: 5px;
+            padding-right: 5px;
         }
         .details-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
             gap: 15px;
         }
         .detail-item {
@@ -232,15 +223,19 @@
             margin-bottom: 12px;
             padding-bottom: 10px;
             border-bottom: 1px dashed #eee;
+            flex-wrap: wrap;
         }
         .detail-label {
             font-weight: bold;
             color: var(--primary-color);
-            min-width: 140px;
+            min-width: 160px;
+            font-size: 14px;
         }
         .detail-value {
             color: #555;
             flex: 1;
+            font-size: 14px;
+            word-break: break-word;
         }
         .no-results {
             text-align: center;
@@ -399,6 +394,8 @@
             body { background: white; padding: 0; margin: 0; }
             .results-section { display: block !important; margin: 0; padding: 0; }
             .employee-card { page-break-inside: avoid; break-inside: avoid; box-shadow: none; border: 1px solid #ccc; margin-bottom: 20px; }
+            .employee-name { font-size: 20px; }
+            .employee-job-title { font-size: 16px; }
         }
         .data-loading {
             text-align: center;
@@ -426,11 +423,11 @@
         @media (max-width: 768px) {
             .header-content { flex-direction: column; text-align: center; gap: 20px; }
             .details-grid { grid-template-columns: 1fr; }
-            .employee-header { flex-direction: column; text-align: center; }
-            .employee-avatar { margin-left: 0; margin-bottom: 15px; }
+            .employee-name { font-size: 20px; text-align: center; }
+            .employee-job-title { font-size: 16px; text-align: center; }
             .action-btn { padding: 8px 12px; font-size: 12px; }
+            .detail-label { min-width: 120px; }
         }
-        /* منطقة الطباعة */
         #print-results-container {
             padding: 20px;
         }
@@ -446,7 +443,7 @@
                     </div>
                     <div class="department-info">
                         <h1>شعبة المالية</h1>
-                        <p>نظام إدارة الموظفين شعبة المالية والتجارية</p>
+                        <p>نظام إدارة الموظفين والرواتب</p>
                     </div>
                 </div>
                 <div class="header-stats">
@@ -463,7 +460,7 @@
 
     <div class="container">
         <section class="search-section no-print">
-            <h2 class="search-title">نظام البحث عن موظفي الشعبة المالية والتجارية</h2>
+            <h2 class="search-title">نظام البحث عن موظفي الشعبة</h2>
             <div class="search-box">
                 <div class="search-input-container">
                     <input type="text" id="search-input" class="search-input" placeholder="اكتب اسم الموظف للبحث...">
@@ -479,7 +476,6 @@
             </div>
             <div class="search-hint">
                 <p>🔍 البحث يتم حسب <strong>الاسم</strong></p>
-                <p style="font-size:12px; color:#888;"></p>
             </div>
             <div class="action-buttons">
                 <button class="action-btn excel" onclick="exportToExcel()">
@@ -535,7 +531,7 @@
             <div class="footer-content">
                 <div class="footer-logo"><i class="fas fa-coins"></i></div>
                 <p>شعبة المالية</p>
-                <p> برمجة ذاتية قسم علوم الاغذية و التقانات الاحيائية  © <span id="current-year"></span></p>
+                <p>نظام إدارة الموظفين © <span id="current-year"></span></p>
             </div>
         </div>
     </footer>
@@ -549,6 +545,7 @@
         let realEmployeeCount = 0;
         let currentResults = [];
 
+        // رابط Google Sheet
         const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQj1o0BLRVs119hZU-VApMhvP1_V0Xc6uqJTdx2uzr9ewF5V9otB6eDMQLbkeR9WlL0uKctlCaXWt5d/pub?gid=0&single=true&output=csv';
 
         const elements = {
@@ -586,36 +583,40 @@
             setTimeout(() => { elements.notification.style.display = 'none'; }, 3000);
         }
 
+        function isValidEmployee(employee) {
+            for (const key in employee) {
+                if (employee[key] && employee[key].toString().trim() !== '') {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         async function fetchEmployeeData() {
             try {
                 elements.dataLoading.style.display = 'block';
                 const response = await fetch(GOOGLE_SHEET_CSV_URL + '&t=' + new Date().getTime());
-                if (!response.ok) throw new Error('خطأ');
+                if (!response.ok) throw new Error('خطأ في الاتصال');
                 const csvData = await response.text();
-                employees = parseCSV(csvData);
-                if (employees.length === 0) throw new Error('لا توجد بيانات');
+                const allEmployees = parseCSV(csvData);
+                employees = allEmployees.filter(emp => isValidEmployee(emp));
+                
+                if (employees.length === 0) {
+                    throw new Error('لا توجد بيانات');
+                }
+                
                 realEmployeeCount = employees.length;
                 elements.dataLoading.style.display = 'none';
                 updateEmployeeCount();
                 showNotification(`✅ تم تحميل ${realEmployeeCount} موظف`, 'success');
             } catch (error) {
-                employees = getDemoData();
-                realEmployeeCount = employees.length;
+                console.error('خطأ:', error);
+                employees = [];
+                realEmployeeCount = 0;
                 updateEmployeeCount();
                 elements.dataLoading.style.display = 'none';
-                showNotification(`⚠️ بيانات تجريبية (${realEmployeeCount} موظف)`, 'warning');
+                showNotification(`❌ فشل تحميل البيانات`, 'error');
             }
-        }
-
-        function getDemoData() {
-            return [
-                { "التسلسل": "1", "الهيكل التنظيمي": "المالية", "المنصب": "مدير القسم", "الرقم": "5657", "الاسم": "د.علي جبار عبد الساده", "الدرجة الوظيفية": "الثانية", "الشهادة": "دكتوراه", "الاختصاص العام": "زراعة", "الاختصاص الدقيق": "تغذية وفسلجة نبات" },
-                { "التسلسل": "2", "الهيكل التنظيمي": "المالية", "المنصب": "محاسب", "الرقم": "5556", "الاسم": "زينب كاطع مارد", "الدرجة الوظيفية": "الخامسة", "الشهادة": "متوسطة", "الاختصاص العام": "*", "الاختصاص الدقيق": "*" },
-                { "التسلسل": "3", "الهيكل التنظيمي": "المالية", "المنصب": "فني", "الرقم": "1881", "الاسم": "عقيل مجيد سعيد", "الدرجة الوظيفية": "الخامسة", "الشهادة": "دبلوم", "الاختصاص العام": "مكان", "الاختصاص الدقيق": "مكان ومعدات" },
-                { "التسلسل": "4", "الهيكل التنظيمي": "المالية", "المنصب": "باحث", "الرقم": "2488", "الاسم": "د. خلود عبد الله محمد", "الدرجة الوظيفية": "الأولى", "الشهادة": "دكتوراه", "الاختصاص العام": "علوم", "الاختصاص الدقيق": "علوم حياة" },
-                { "التسلسل": "5", "الهيكل التنظيمي": "المالية", "المنصب": "باحث", "الرقم": "1601", "الاسم": "د. وفاء هادي حسون", "الدرجة الوظيفية": "الأولى", "الشهادة": "دكتوراه", "الاختصاص العام": "زراعة", "الاختصاص الدقيق": "هندسة حدائق" },
-                { "التسلسل": "6", "الهيكل التنظيمي": "المالية", "المنصب": "موظف", "الرقم": "001", "الاسم": "دريد حامد محمود", "الدرجة الوظيفية": "الثالثة", "الشهادة": "بكالوريوس", "الاختصاص العام": "محاسبة", "الاختصاص الدقيق": "مالية" }
-            ];
         }
 
         function parseCSV(csvText) {
@@ -627,11 +628,11 @@
                 const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
                 const employee = {};
                 for (let j = 0; j < headers.length; j++) {
-                    employee[headers[j]] = values[j] || '';
+                    if (headers[j] && headers[j].trim() !== '') {
+                        employee[headers[j]] = values[j] || '';
+                    }
                 }
-                if (employee["الاسم"] && employee["الاسم"].trim() !== '') {
-                    data.push(employee);
-                }
+                data.push(employee);
             }
             return data;
         }
@@ -642,6 +643,11 @@
         }
 
         function searchEmployees() {
+            if (employees.length === 0) {
+                showNotification('⚠️ لا توجد بيانات متاحة', 'warning');
+                return;
+            }
+            
             const query = elements.searchInput.value.trim().toLowerCase();
             if (!query) {
                 showNotification('⚠️ الرجاء إدخال اسم للبحث', 'warning');
@@ -654,11 +660,11 @@
             
             setTimeout(() => {
                 const results = employees.filter(employee => {
-                    const nameValue = employee["الاسم"] || '';
-                    if (nameValue.toLowerCase().includes(query)) return true;
                     for (const key in employee) {
                         const value = employee[key] || '';
-                        if (value.toLowerCase().includes(query)) return true;
+                        if (value.toLowerCase().includes(query)) {
+                            return true;
+                        }
                     }
                     return false;
                 });
@@ -685,35 +691,141 @@
             });
         }
 
+        // دالة للحصول على الاسم الحقيقي من العمود الصحيح
+        function getEmployeeFullName(employee) {
+            // البحث عن الاسم في الأعمدة المحتملة حسب الصورة
+            const possibleNameFields = [
+                'السادس',      // العمود السادس (F) كما في الصورة
+                'الاسم', 
+                'name', 
+                'Name', 
+                'الإسم',
+                'الاسم الكامل',
+                'الموظف',
+                'العمود6',
+                'F'
+            ];
+            
+            for (const field of possibleNameFields) {
+                if (employee[field] && employee[field].toString().trim() !== '') {
+                    return employee[field];
+                }
+            }
+            
+            // إذا لم يتم العثور على اسم، نبحث عن أي قيمة غير فارغة
+            for (const key in employee) {
+                const value = employee[key];
+                if (value && value.toString().trim() !== '') {
+                    // نتخطى القيم التي تبدو كعناوين وليست أسماء
+                    if (value.length > 2 && !value.includes('شعبة') && !value.includes('قسم')) {
+                        return value;
+                    }
+                }
+            }
+            return 'غير محدد';
+        }
+
+        // دالة للحصول على العنوان الوظيفي
+        function getEmployeeJobTitle(employee, fullName) {
+            const possibleTitleFields = [
+                'المنصب',
+                'العنوان الوظيفي',
+                'الدرجة الوظيفية',
+                'المسمى الوظيفي',
+                'الوظيفة',
+                'المنصب أو مكان العمل'
+            ];
+            
+            for (const field of possibleTitleFields) {
+                if (employee[field] && employee[field].toString().trim() !== '' && employee[field] !== fullName) {
+                    return employee[field];
+                }
+            }
+            
+            // إذا لم يتم العثور على عنوان، نبحث عن أول قيمة مختلفة عن الاسم
+            for (const key in employee) {
+                const value = employee[key];
+                if (value && value.toString().trim() !== '' && value !== fullName) {
+                    return value;
+                }
+            }
+            return '';
+        }
+
         function createEmployeeCard(employee) {
             const card = document.createElement('div');
             card.className = 'employee-card';
-            const fullName = employee["الاسم"] || 'غير محدد';
-            const firstLetter = fullName.charAt(0) || 'م';
             
-            const orderedFields = ["الرقم", "الهيكل التنظيمي", "المنصب", "الدرجة الوظيفية", "الشهادة", "الاختصاص العام", "الاختصاص الدقيق"];
+            const fullName = getEmployeeFullName(employee);
+            const jobTitle = getEmployeeJobTitle(employee, fullName);
             
+            // عرض باقي الحقول (كل الحقول الأخرى عدا الاسم)
             let detailsHTML = '';
+            let namePrinted = false;
+            
+            // ترتيب الحقول المعروضة (حسب ما ظهر في الصورة)
+            const orderedFields = ['ت', 'الرقم الزمني', 'السادس', 'المنصب', 'الدرجة الوظيفية', 'الشهادة', 'القسم', 'الهيكل التنظيمي'];
+            
+            // عرض الحقول بالترتيب المحدد أولاً
             for (const field of orderedFields) {
-                if (employee[field] && employee[field].trim() !== '' && employee[field] !== '*') {
+                const value = employee[field];
+                if (value !== undefined && value.toString().trim() !== '') {
+                    if (field === 'السادس' || value === fullName) {
+                        if (!namePrinted) {
+                            namePrinted = true;
+                            continue;
+                        }
+                    }
+                    const displayValue = value;
                     detailsHTML += `
                         <div class="detail-item">
                             <span class="detail-label">${field}:</span>
-                            <span class="detail-value">${employee[field]}</span>
+                            <span class="detail-value">${displayValue}</span>
+                        </div>
+                    `;
+                } else if (value === '') {
+                    detailsHTML += `
+                        <div class="detail-item">
+                            <span class="detail-label">${field}:</span>
+                            <span class="detail-value">(فارغ)</span>
                         </div>
                     `;
                 }
             }
             
+            // عرض باقي الحقول التي لم تظهر في الترتيب
+            for (const key in employee) {
+                if (!orderedFields.includes(key) && key !== 'السادس') {
+                    const value = employee[key];
+                    if (value !== undefined && value.toString().trim() !== '') {
+                        if (value === fullName) continue;
+                        if (value === jobTitle) continue;
+                        detailsHTML += `
+                            <div class="detail-item">
+                                <span class="detail-label">${key}:</span>
+                                <span class="detail-value">${value}</span>
+                            </div>
+                        `;
+                    } else if (value === '') {
+                        detailsHTML += `
+                            <div class="detail-item">
+                                <span class="detail-label">${key}:</span>
+                                <span class="detail-value">(فارغ)</span>
+                            </div>
+                        `;
+                    }
+                }
+            }
+            
+            // بناء البطاقة
             card.innerHTML = `
                 <div class="employee-header">
-                    <div class="employee-avatar">${firstLetter}</div>
-                    <div>
-                        <h3 class="employee-name">${fullName}</h3>
-                        <p class="employee-id">الرقم: ${employee["الرقم"] || ''}</p>
-                    </div>
+                    <div class="employee-name">${fullName}</div>
+                    ${jobTitle ? `<div class="employee-job-title">${jobTitle}</div>` : ''}
                 </div>
-                <div class="details-grid">${detailsHTML}</div>
+                <div class="details-grid">
+                    ${detailsHTML}
+                </div>
             `;
             return card;
         }
@@ -725,38 +837,28 @@
                 return;
             }
             
-            // تحويل البيانات إلى جدول
             const excelData = [];
-            // رؤوس الأعمدة
-            const headers = ["الرقم", "الهيكل التنظيمي", "المنصب", "الاسم", "الدرجة الوظيفية", "الشهادة", "الاختصاص العام", "الاختصاص الدقيق"];
-            excelData.push(headers);
+            const allKeys = Object.keys(currentResults[0]);
+            excelData.push(allKeys);
             
-            // بيانات الموظفين
             for (const emp of currentResults) {
-                excelData.push([
-                    emp["الرقم"] || '',
-                    emp["الهيكل التنظيمي"] || '',
-                    emp["المنصب"] || '',
-                    emp["الاسم"] || '',
-                    emp["الدرجة الوظيفية"] || '',
-                    emp["الشهادة"] || '',
-                    emp["الاختصاص العام"] || '',
-                    emp["الاختصاص الدقيق"] || ''
-                ]);
+                const row = [];
+                for (const key of allKeys) {
+                    row.push(emp[key] || '');
+                }
+                excelData.push(row);
             }
             
-            // إنشاء ورقة عمل
             const ws = XLSX.utils.aoa_to_sheet(excelData);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "الموظفين");
             
-            // حفظ الملف
             const searchTerm = elements.searchInput.value || 'الكل';
             XLSX.writeFile(wb, `موظفين_${searchTerm}_${Date.now()}.xlsx`);
             showNotification('✅ تم حفظ ملف Excel بنجاح', 'success');
         }
 
-        // ============== حفظ PDF بشكل صحيح بالعربية ==============
+        // ============== حفظ PDF ==============
         async function exportToPDF() {
             if (currentResults.length === 0) {
                 showNotification('⚠️ لا توجد نتائج للتصدير', 'warning');
@@ -765,33 +867,35 @@
             
             showNotification('📄 جاري إنشاء ملف PDF...', 'info');
             
-            // إنشاء نافذة مؤقتة للطباعة بصيغة PDF
             const searchTerm = elements.searchInput.value || 'جميع الموظفين';
             const now = new Date();
             const dateStr = now.toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' });
             const timeStr = now.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
             
-            // إنشاء HTML للطباعة
             let employeesHTML = '';
             for (const emp of currentResults) {
-                const fullName = emp["الاسم"] || 'غير محدد';
+                const fullName = getEmployeeFullName(emp);
+                const jobTitle = getEmployeeJobTitle(emp, fullName);
+                
+                let detailsHTML = '';
+                for (const key in emp) {
+                    const value = emp[key];
+                    if (value !== undefined && value.toString().trim() !== '') {
+                        if (value === fullName) continue;
+                        if (value === jobTitle) continue;
+                        detailsHTML += `<div style="margin: 5px 0;"><strong>${key}:</strong> ${value}</div>`;
+                    } else if (value === '') {
+                        detailsHTML += `<div style="margin: 5px 0;"><strong>${key}:</strong> (فارغ)</div>`;
+                    }
+                }
+                
                 employeesHTML += `
                     <div style="border: 1px solid #ddd; border-right: 5px solid #1e3a5f; padding: 15px; margin-bottom: 20px; border-radius: 8px; page-break-inside: avoid;">
-                        <div style="display: flex; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #1e3a5f;">
-                            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #1e3a5f, #4c9aff); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; margin-left: 15px;">${fullName.charAt(0) || 'م'}</div>
-                            <div>
-                                <h3 style="font-size: 18px; color: #1e3a5f; margin: 0;">${fullName}</h3>
-                                <p style="color: #666; margin: 5px 0 0 0;">الرقم: ${emp["الرقم"] || ''}</p>
-                            </div>
+                        <div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #1e3a5f;">
+                            <h3 style="font-size: 20px; color: #1e3a5f; margin: 0 0 5px 0;">${fullName}</h3>
+                            ${jobTitle ? `<p style="color: #4c9aff; margin: 0; font-weight: bold;">${jobTitle}</p>` : ''}
                         </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            ${emp["الهيكل التنظيمي"] && emp["الهيكل التنظيمי"] !== '*' ? `<div><strong>الهيكل التنظيمي:</strong> ${emp["الهيكل التنظيمي"]}</div>` : ''}
-                            ${emp["المنصب"] && emp["المنصب"] !== '*' ? `<div><strong>المنصب:</strong> ${emp["المنصب"]}</div>` : ''}
-                            ${emp["الدرجة الوظيفية"] && emp["الدرجة الوظيفية"] !== '*' ? `<div><strong>الدرجة الوظيفية:</strong> ${emp["الدرجة الوظيفية"]}</div>` : ''}
-                            ${emp["الشهادة"] && emp["الشهادة"] !== '*' ? `<div><strong>الشهادة:</strong> ${emp["الشهادة"]}</div>` : ''}
-                            ${emp["الاختصاص العام"] && emp["الاختصاص العام"] !== '*' ? `<div><strong>الاختصاص العام:</strong> ${emp["الاختصاص العام"]}</div>` : ''}
-                            ${emp["الاختصاص الدقيق"] && emp["الاختصاص الدقيق"] !== '*' ? `<div><strong>الاختصاص الدقيق:</strong> ${emp["الاختصاص الدقيق"]}</div>` : ''}
-                        </div>
+                        <div>${detailsHTML}</div>
                     </div>
                 `;
             }
@@ -803,10 +907,7 @@
                     <meta charset="UTF-8">
                     <title>تقرير الموظفين</title>
                     <style>
-                        @media print {
-                            @page { size: A4; margin: 15mm; }
-                            body { margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
-                        }
+                        @media print { @page { size: A4; margin: 15mm; } body { margin: 0; padding: 0; } }
                         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: white; }
                         .header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px solid #1e3a5f; }
                         .logo { width: 60px; height: 60px; background: #1e3a5f; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 28px; margin: 0 auto 15px; }
@@ -830,14 +931,13 @@
                 </html>
             `;
             
-            // فتح نافذة جديدة وطباعتها كـ PDF
             const pdfWindow = window.open('', '_blank');
             pdfWindow.document.write(printHTML);
             pdfWindow.document.close();
             
             setTimeout(() => {
                 pdfWindow.print();
-                showNotification('✅ تم فتح PDF للطباعة - اختر "حفظ كـ PDF"', 'success');
+                showNotification('✅ تم فتح PDF للطباعة', 'success');
             }, 500);
         }
 
@@ -850,15 +950,13 @@
             
             showNotification('📸 جاري تحضير الصورة...', 'info');
             
-            // إنشاء عنصر مؤقت لالتقاط الصورة
             const captureDiv = document.createElement('div');
             captureDiv.style.backgroundColor = 'white';
             captureDiv.style.padding = '20px';
             captureDiv.style.direction = 'rtl';
             captureDiv.style.fontFamily = 'Segoe UI, Tahoma, sans-serif';
-            captureDiv.style.width = '800px';
+            captureDiv.style.width = '900px';
             
-            // إضافة الهيدر
             captureDiv.innerHTML = `
                 <div style="text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 3px solid #1e3a5f;">
                     <div style="width: 60px; height: 60px; background: #1e3a5f; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 28px; margin: 0 auto 10px;">💰</div>
@@ -868,8 +966,10 @@
                 </div>
             `;
             
-            // إضافة بطاقات الموظفين
             for (const emp of currentResults) {
+                const fullName = getEmployeeFullName(emp);
+                const jobTitle = getEmployeeJobTitle(emp, fullName);
+                
                 const empDiv = document.createElement('div');
                 empDiv.style.border = '1px solid #ddd';
                 empDiv.style.borderRight = '5px solid #1e3a5f';
@@ -878,21 +978,23 @@
                 empDiv.style.borderRadius = '8px';
                 
                 let detailsHTML = '';
-                const fields = ["الرقم", "الهيكل التنظيمي", "المنصب", "الدرجة الوظيفية", "الشهادة", "الاختصاص العام", "الاختصاص الدقيق"];
-                for (const f of fields) {
-                    if (emp[f] && emp[f] !== '*' && emp[f].trim() !== '') {
-                        detailsHTML += `<div style="margin: 5px 0;"><strong>${f}:</strong> ${emp[f]}</div>`;
+                for (const key in emp) {
+                    const value = emp[key];
+                    if (value !== undefined && value.toString().trim() !== '') {
+                        if (value === fullName) continue;
+                        if (value === jobTitle) continue;
+                        detailsHTML += `<div style="margin: 4px 0;"><strong>${key}:</strong> ${value}</div>`;
+                    } else if (value === '') {
+                        detailsHTML += `<div style="margin: 4px 0;"><strong>${key}:</strong> (فارغ)</div>`;
                     }
                 }
                 
                 empDiv.innerHTML = `
-                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                        <div style="width: 45px; height: 45px; background: linear-gradient(135deg, #1e3a5f, #4c9aff); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; margin-left: 10px;">${(emp["الاسم"] || 'م').charAt(0)}</div>
-                        <div>
-                            <h3 style="margin: 0; color: #1e3a5f;">${emp["الاسم"] || 'غير محدد'}</h3>
-                        </div>
+                    <div style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #1e3a5f;">
+                        <h3 style="margin: 0 0 5px 0; color: #1e3a5f; font-size: 18px;">${fullName}</h3>
+                        ${jobTitle ? `<p style="margin: 0; color: #4c9aff; font-weight: bold; font-size: 14px;">${jobTitle}</p>` : ''}
                     </div>
-                    ${detailsHTML}
+                    <div>${detailsHTML}</div>
                 `;
                 captureDiv.appendChild(empDiv);
             }
@@ -931,29 +1033,33 @@
             
             let employeesHTML = '';
             for (const emp of currentResults) {
-                const fullName = emp["الاسم"] || 'غير محدد';
+                const fullName = getEmployeeFullName(emp);
+                const jobTitle = getEmployeeJobTitle(emp, fullName);
+                
+                let detailsHTML = '';
+                for (const key in emp) {
+                    const value = emp[key];
+                    if (value !== undefined && value.toString().trim() !== '') {
+                        if (value === fullName) continue;
+                        if (value === jobTitle) continue;
+                        detailsHTML += `<div style="margin: 4px 0;"><strong>${key}:</strong> ${value}</div>`;
+                    } else if (value === '') {
+                        detailsHTML += `<div style="margin: 4px 0;"><strong>${key}:</strong> (فارغ)</div>`;
+                    }
+                }
+                
                 employeesHTML += `
                     <div style="border: 1px solid #ddd; border-right: 5px solid #1e3a5f; padding: 15px; margin-bottom: 20px; border-radius: 8px; page-break-inside: avoid;">
-                        <div style="display: flex; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #1e3a5f;">
-                            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #1e3a5f, #4c9aff); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; margin-left: 15px;">${fullName.charAt(0) || 'م'}</div>
-                            <div>
-                                <h3 style="font-size: 18px; color: #1e3a5f; margin: 0;">${fullName}</h3>
-                                <p style="color: #666; margin: 5px 0 0 0;">الرقم: ${emp["الرقم"] || ''}</p>
-                            </div>
+                        <div style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #1e3a5f;">
+                            <h3 style="margin: 0 0 5px 0; color: #1e3a5f;">${fullName}</h3>
+                            ${jobTitle ? `<p style="margin: 0; color: #4c9aff; font-weight: bold;">${jobTitle}</p>` : ''}
                         </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            ${emp["الهيكل التنظيمي"] && emp["الهيكل التنظيمي"] !== '*' ? `<div><strong>الهيكل التنظيمي:</strong> ${emp["الهيكل التنظيمي"]}</div>` : ''}
-                            ${emp["المنصب"] && emp["المنصب"] !== '*' ? `<div><strong>المنصب:</strong> ${emp["المنصب"]}</div>` : ''}
-                            ${emp["الدرجة الوظيفية"] && emp["الدرجة الوظيفية"] !== '*' ? `<div><strong>الدرجة الوظيفية:</strong> ${emp["الدرجة الوظيفية"]}</div>` : ''}
-                            ${emp["الشهادة"] && emp["الشهادة"] !== '*' ? `<div><strong>الشهادة:</strong> ${emp["الشهادة"]}</div>` : ''}
-                            ${emp["الاختصاص العام"] && emp["الاختصاص العام"] !== '*' ? `<div><strong>الاختصاص العام:</strong> ${emp["الاختصاص العام"]}</div>` : ''}
-                            ${emp["الاختصاص الدقيق"] && emp["الاختصاص الدقيق"] !== '*' ? `<div><strong>الاختصاص الدقيق:</strong> ${emp["الاختصاص الدقيق"]}</div>` : ''}
-                        </div>
+                        <div>${detailsHTML}</div>
                     </div>
                 `;
             }
             
-            const printWindow = window.open('', '_blank', 'width=900,height=700,scrollbars=yes');
+            const printWindow = window.open('', '_blank', 'width=1000,height=800,scrollbars=yes');
             printWindow.document.write(`
                 <!DOCTYPE html>
                 <html dir="rtl">
@@ -981,7 +1087,7 @@
                         <div class="count">عدد النتائج: ${currentResults.length} موظف</div>
                     </div>
                     ${employeesHTML}
-                    <script>window.onload = function() { window.print(); };<\/script>
+                    <script>window.onload = function() { window.print(); window.close(); };<\/script>
                 </body>
                 </html>
             `);
@@ -990,14 +1096,19 @@
         }
 
         function showAllEmployees() {
+            if (employees.length === 0) {
+                showNotification('⚠️ لا توجد بيانات متاحة', 'warning');
+                return;
+            }
+            
             elements.allEmployeesContainer.innerHTML = '';
             elements.resultsSection.style.display = 'none';
             elements.noResults.style.display = 'none';
             elements.allEmployeesSection.style.display = 'block';
             currentResults = employees;
             employees.forEach(emp => {
-                const fullName = emp["الاسم"] || 'غير محدد';
-                const position = emp["المنصب"] || '';
+                const fullName = getEmployeeFullName(emp);
+                const position = getEmployeeJobTitle(emp, fullName);
                 const card = document.createElement('div');
                 card.className = 'employee-mini-card';
                 card.onclick = () => {
